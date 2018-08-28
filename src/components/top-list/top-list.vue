@@ -1,0 +1,81 @@
+<template>
+  <transition name="slide">
+    <music-list :rank="rank" :title="title" :bg-image="bgImage" :songs="songs" ref="songs"></music-list>
+  </transition>
+</template>
+
+<script type="text/ecmascript-6">
+  import MusicList from 'components/music-list/music-list'
+  import {getMusicList} from 'api/rank'
+  import {ERR_OK} from 'common/js/config'
+  import {createSong, isValidMusic, processSongsUrl} from 'common/js/song'
+  import {mapGetters} from 'vuex'
+
+
+  export default {
+    computed: {
+      title() {
+        console.log(this.topList)
+        return this.topList.topTitle
+      },
+      bgImage() {
+        console.log(this.songs)
+        if (this.songs.length) {
+          return this.songs[0].image
+        }
+        return ''
+        // return this.topList.picUrl
+      },
+      ...mapGetters([
+        'topList'
+      ])
+    },
+    data() {
+      return {
+        songs: [],
+        rank: true
+      }
+    },
+    created() {
+      this._getMusicList()
+    },
+    methods: {
+      _getMusicList() {
+        if (!this.topList.id) {
+          this.$router.push('/rank')
+          return
+        }
+        getMusicList(this.topList.id).then((res) => {
+          if (res.code === ERR_OK) {
+            console.log(res)
+            this.songs = this._normalizeSongs(res.songlist)
+            /* processSongsUrl(this._normalizeSongs(res.songlist)).then((songs)=>{
+                 this.songs = songs
+             })*/
+          }
+        })
+      },
+      _normalizeSongs(list) {
+        let ret = []
+        list.forEach((item) => {
+          const musicData = item.data
+          if (isValidMusic(musicData)) {
+            ret.push(createSong(musicData))
+          }
+        })
+        return ret
+      }
+    },
+    components: {
+      MusicList
+    }
+  }
+</script>
+
+<style scoped lang="stylus" rel="stylesheet/stylus">
+  .slide-enter-active, .slide-leave-active
+    transition: all 0.3s ease
+
+  .slide-enter, .slide-leave-to
+    transform: translate3d(100%, 0, 0)
+</style>
